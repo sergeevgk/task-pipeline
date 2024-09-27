@@ -17,4 +17,8 @@
     <ProjectReference Include="..\TaskPipeline.ServiceDefaults\TaskPipeline.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
 @TaskPipeline.ApiService_HostAddress = http://localhost:5042
 
-GET {{TaskPipeline.ApiService_HostAddress}}/weatherforecast/
+GET {{TaskPipeline.ApiService_HostAddress}}/tasks/
 Accept: application/json
 
 ###
