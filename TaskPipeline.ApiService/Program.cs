@@ -7,15 +7,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddDbContext<TaskDbContext>(options =>
-	options.UseInMemoryDatabase("TaskDb"));
+	options.UseInMemoryDatabase("TaskPipelineDb"));
+builder.Services.AddDbContext<PipelineDbContext>(options =>
+	options.UseInMemoryDatabase("TaskPipelineDb"));
 builder.Services.AddDbContext<UserDbContext>(options =>
-	options.UseInMemoryDatabase("UserDb"));
+	options.UseInMemoryDatabase("TaskPipelineDb"));
 
 builder.Services.AddTransient<UserService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+	options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option =>
 {
@@ -52,6 +56,11 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+
+	using var scope = app.Services.CreateScope();
+	var services = scope.ServiceProvider;
+	var userDb = services.GetRequiredService<UserDbContext>();
+	userDb.Database.EnsureCreated();
 }
 
 app.UseHttpsRedirection();
@@ -78,22 +87,6 @@ static async Task<IResult> CreateUser(User user, UserDbContext db)
 	db.Users.Add(user);
 	await db.SaveChangesAsync();
 	return Results.Created($"/users/{user.Id}", user);
-}
-
-using (var scope = app.Services.CreateScope())
-{
-	var services = scope.ServiceProvider;
-	var userDb = services.GetRequiredService<UserDbContext>();
-
-	if (!userDb.Users.Any())
-	{
-		userDb.Users.AddRange(
-			new User { Name = "Alice", ApiToken = "token_123" },
-			new User { Name = "Bob", ApiToken = "token_456" },
-			new User { Name = "Charlie", ApiToken = "token_789" }
-		);
-		await userDb.SaveChangesAsync();
-	}
 }
 
 #endregion

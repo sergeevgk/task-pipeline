@@ -45,7 +45,9 @@ namespace TaskPipeline.ApiService
 		[HttpPost]
 		public async Task<IActionResult> CreateTask([FromBody] Models.Task task)
 		{
-			if (!IsValidToken(Request.Headers["UserApiKey"]))
+			var apiKey = Request.Headers["UserApiKey"].ToString();
+			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+			if (!isValid)
 			{
 				return Unauthorized("Invalid API token.");
 			}
@@ -59,7 +61,9 @@ namespace TaskPipeline.ApiService
 		[HttpPut("{id:int}")]
 		public async Task<IActionResult> UpdateTask(int id, [FromBody] Models.Task updatedTask)
 		{
-			if (!IsValidToken(Request.Headers["UserApiKey"]))
+			var apiKey = Request.Headers["UserApiKey"].ToString();
+			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+			if (!isValid)
 			{
 				return Unauthorized("Invalid API token.");
 			}
@@ -82,7 +86,9 @@ namespace TaskPipeline.ApiService
 		[HttpDelete("{id:int}")]
 		public async Task<IActionResult> DeleteTask(int id)
 		{
-			if (!IsValidToken(Request.Headers["UserApiKey"]))
+			var apiKey = Request.Headers["UserApiKey"].ToString();
+			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+			if (!isValid)
 			{
 				return Unauthorized("Invalid API token.");
 			}
@@ -94,12 +100,6 @@ namespace TaskPipeline.ApiService
 			_context.Tasks.Remove(task);
 			await _context.SaveChangesAsync();
 			return NoContent();
-		}
-
-		private bool IsValidToken(string? token)
-		{
-			var isValid = token != null && _userService.VerifyToken(token);
-			return isValid;
 		}
 	}
 }
