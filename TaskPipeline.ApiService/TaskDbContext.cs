@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TaskPipeline.ApiService.Models;
 
 namespace TaskPipeline.ApiService
 {

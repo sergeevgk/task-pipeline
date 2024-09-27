@@ -33,6 +33,14 @@ namespace TaskPipeline.ApiService
 			return task is not null ? Ok(task) : NotFound();
 		}
 
+		// GET: /tasks/{id}
+		[HttpGet("{id:int}/time")]
+		public async Task<IActionResult> GetAverageTaskTimeById(int id)
+		{
+			var task = await _context.Tasks.FindAsync(id);
+			return task is not null ? Ok(task.AverageTime) : NotFound();
+		}
+
 		// POST: /tasks
 		[HttpPost]
 		public async Task<IActionResult> CreateTask([FromBody] Models.Task task)
