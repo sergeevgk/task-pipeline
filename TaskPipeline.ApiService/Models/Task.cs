@@ -15,5 +15,5 @@ public record Task
 	public required string CreatedBy { get; set; }
 	public DateTime CreatedDate { get; set; }
 	public int PipelineId { get; set; }
-	public Pipeline? Pipeline { get; set; }
+	public Pipeline? Pipeline { get; set; } = null;
 }

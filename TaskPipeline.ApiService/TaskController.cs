@@ -9,10 +9,10 @@ namespace TaskPipeline.ApiService
 	[Route("tasks")]
 	public class TaskController : ControllerBase
 	{
-		private TaskDbContext _context;
+		private AppDbContext _context;
 		private readonly UserService _userService;
 
-		public TaskController(TaskDbContext context, UserService userService)
+		public TaskController(AppDbContext context, UserService userService)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
 			_userService = userService ?? throw new ArgumentNullException(nameof(userService));

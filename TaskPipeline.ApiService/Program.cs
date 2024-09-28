@@ -6,9 +6,7 @@ using TaskPipeline.ApiService.Models;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-builder.Services.AddDbContext<TaskDbContext>(options =>
-	options.UseInMemoryDatabase("TaskPipelineDb"));
-builder.Services.AddDbContext<PipelineDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseInMemoryDatabase("TaskPipelineDb"));
 builder.Services.AddDbContext<UserDbContext>(options =>
 	options.UseInMemoryDatabase("TaskPipelineDb"));
@@ -45,6 +43,7 @@ builder.Services.AddSwaggerGen(option =>
 			new string[]{}
 		}
 	});
+	option.SchemaFilter<ExamplesSchemaFilter>();
 });
 
 var app = builder.Build();
