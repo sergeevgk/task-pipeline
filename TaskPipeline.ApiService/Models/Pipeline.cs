@@ -8,6 +8,7 @@ public record Pipeline
 	public List<Task> Tasks { get; set; } = [];
 	/// <summary>
 	/// Total time of the pipeline run based on individual times of included tasks.
+	/// Recalculated automatically on adding a new task to a pipeline and is saved in DB.
 	/// </summary>
 	public double TotalTime => Tasks.Sum(t => t.AverageTime);
 	public string? Description { get; set; }

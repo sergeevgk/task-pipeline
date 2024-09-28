@@ -37,7 +37,9 @@ namespace TaskPipeline.ApiService
 		[HttpGet("{id:int}/time")]
 		public async Task<IActionResult> GetPipelineTotalTimeById(int id)
 		{
-			var pipeline = await _appDbContext.Pipelines.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
+			var pipeline = await _appDbContext.Pipelines.FirstOrDefaultAsync(p => p.Id == id);
+			// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
+			// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
 			return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
 		}
 
