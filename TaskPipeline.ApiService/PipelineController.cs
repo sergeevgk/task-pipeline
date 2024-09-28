@@ -80,9 +80,29 @@ namespace TaskPipeline.ApiService
 			return Ok(pipeline);
 		}
 
+		// DELETE: /pipelines/{id}
+		[HttpDelete("{id:int}")]
+		public async Task<IActionResult> DeletePipeline(int id)
+		{
+			var apiKey = Request.Headers["UserApiKey"].ToString();
+			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+			if (!isValid)
+			{
+				return Unauthorized("Invalid API token.");
+			}
+
+			var pipeline = await _appDbContext.Pipelines.FindAsync(id);
+			if (pipeline is null)
+				return NotFound();
+
+			_appDbContext.Pipelines.Remove(pipeline);
+			await _appDbContext.SaveChangesAsync();
+			return NoContent();
+		}
+
 		// POST: /pipelines/{pipelineId}/tasks/{taskId}
 		[HttpPost("{pipelineId:int}/tasks/{taskId:int}")]
-		public async Task<IActionResult> AddTaskToPipeline([FromRoute]int pipelineId, [FromRoute]int taskId)
+		public async Task<IActionResult> AddTaskToPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
 		{
 			var apiKey = Request.Headers["UserApiKey"].ToString();
 			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -130,9 +150,9 @@ namespace TaskPipeline.ApiService
 			return Ok(pipeline);
 		}
 
-		// DELETE: /pipelines/{id}
-		[HttpDelete("{id:int}")]
-		public async Task<IActionResult> DeletePipeline(int id)
+		// DELETE: /pipelines/{pipelineId}/tasks/{taskId}
+		[HttpDelete("{pipelineId:int}/tasks/{taskId:int}")]
+		public async Task<IActionResult> RemoveTaskFromPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
 		{
 			var apiKey = Request.Headers["UserApiKey"].ToString();
 			var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -141,11 +161,18 @@ namespace TaskPipeline.ApiService
 				return Unauthorized("Invalid API token.");
 			}
 
-			var pipeline = await _appDbContext.Pipelines.FindAsync(id);
+			var pipeline = await _appDbContext.Pipelines.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == pipelineId);
 			if (pipeline is null)
-				return NotFound();
+				return NotFound($"Pipeline with id [{pipelineId}] is not found");
 
-			_appDbContext.Pipelines.Remove(pipeline);
+			var task = pipeline.Tasks.FirstOrDefault(t => t.Id == taskId);
+			if (task is null)
+				return NotFound($"Task with id [{taskId}] is not found in pipeline [{pipelineId}]");
+
+			pipeline.Tasks.Remove(task);
+			task.PipelineId = 0;
+			task.Pipeline = null;
+
 			await _appDbContext.SaveChangesAsync();
 			return NoContent();
 		}
