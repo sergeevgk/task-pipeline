@@ -17,6 +17,7 @@ namespace TaskPipeline.ApiService
 			_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		}
 
+		#region pipeline CRUD
 		// GET: /pipelines
 		[HttpGet]
 		public async Task<IActionResult> GetAllPipelines()
@@ -31,16 +32,6 @@ namespace TaskPipeline.ApiService
 		{
 			var pipeline = await _appDbContext.Pipelines.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
 			return pipeline is not null ? Ok(pipeline) : NotFound();
-		}
-
-		// GET: /pipelines/{id}/time
-		[HttpGet("{id:int}/time")]
-		public async Task<IActionResult> GetPipelineTotalTimeById(int id)
-		{
-			var pipeline = await _appDbContext.Pipelines.FirstOrDefaultAsync(p => p.Id == id);
-			// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
-			// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
-			return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
 		}
 
 		// POST: /pipelines
@@ -101,7 +92,9 @@ namespace TaskPipeline.ApiService
 			await _appDbContext.SaveChangesAsync();
 			return NoContent();
 		}
+		#endregion
 
+		#region pipeline tasks operations
 		// POST: /pipelines/{pipelineId}/tasks/{taskId}
 		[HttpPost("{pipelineId:int}/tasks/{taskId:int}")]
 		public async Task<IActionResult> AddTaskToPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
@@ -177,6 +170,53 @@ namespace TaskPipeline.ApiService
 
 			await _appDbContext.SaveChangesAsync();
 			return NoContent();
+		}
+		#endregion
+
+		// GET: /pipelines/{id}/time
+		[HttpGet("{id:int}/time")]
+		public async Task<IActionResult> GetPipelineTotalTimeById(int id)
+		{
+			var pipeline = await _appDbContext.Pipelines.FirstOrDefaultAsync(p => p.Id == id);
+			// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
+			// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
+			return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
+		}
+
+		[HttpPost("{pipelineId}/run")]
+		public async Task<IActionResult> RunPipeline(int pipelineId)
+		{
+			var pipeline = await _appDbContext.Pipelines.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == pipelineId);
+			if (pipeline == null)
+			{
+				return NotFound(new { message = "Pipeline not found." });
+			}
+
+			if (pipeline.Status == PipelineStatus.Running)
+			{
+				return Conflict(new { message = "Pipeline is already running." });
+			}
+
+			pipeline.Status = PipelineStatus.Running;
+			await _appDbContext.SaveChangesAsync();
+			double actualRunTime = 0;
+			try
+			{
+				actualRunTime = await pipeline.RunAsync();
+			}
+			catch (Exception)
+			{
+				// TODO: log some details
+				throw;
+			}
+
+			pipeline.PipelineRunTime = actualRunTime;
+			pipeline.Status = PipelineStatus.Finished;
+			await _appDbContext.SaveChangesAsync();
+
+			return Ok($"Pipeline has finished running in {actualRunTime} seconds.");
+			// TODO: return accepted and subscribe to the result instead of waiting
+			// return Accepted(new { message = "Pipeline run has been started", pipelineId = pipelineId, status = pipeline.Status });
 		}
 	}
 }

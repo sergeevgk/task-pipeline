@@ -1,12 +1,14 @@
-﻿namespace TaskPipeline.ApiService.Models;
+﻿using ThreadingTasks = System.Threading.Tasks;
+namespace TaskPipeline.ApiService.Models;
 
-public record Task
+public class Task
 {
 	public int Id { get; set; }
 	public required string Name { get; set; }
 	/// <summary>
-	/// Estimated average run time of the task in a pipeline.
+	/// Estimated average run time of the task in a pipeline in seconds.
 	/// </summary>
+	/// <example>10.0</example>
 	public double AverageTime { get; set; }
 	public string? Description { get; set; }
 	/// <summary>
@@ -16,4 +18,13 @@ public record Task
 	public DateTime CreatedDate { get; set; }
 	public int PipelineId { get; set; }
 	public Pipeline? Pipeline { get; set; } = null;
+
+	public async ThreadingTasks.Task RunAsync()
+	{
+		var taskRunTimeInMs = (int)Math.Ceiling(AverageTime * 1000);
+		// emulate some task running asynchronously
+		await ThreadingTasks.Task.Delay(taskRunTimeInMs);
+
+		return;
+	}
 }
