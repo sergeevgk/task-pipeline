@@ -16,8 +16,6 @@ public class Task
 	/// </summary>
 	public required string CreatedBy { get; set; }
 	public DateTime CreatedDate { get; set; }
-	public int PipelineId { get; set; }
-	public Pipeline? Pipeline { get; set; } = null;
 
 	public async ThreadingTasks.Task RunAsync()
 	{

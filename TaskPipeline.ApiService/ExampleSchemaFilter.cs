@@ -9,8 +9,6 @@ public class ExamplesSchemaFilter : ISchemaFilter
 	{
 		if (context.Type == typeof(Models.Task))
 		{
-			schema.Properties.Remove("pipeline");
-			schema.Properties.Remove("pipelineId");
 			schema.Example = new OpenApiObject
 			{
 				["id"] = new OpenApiInteger(0),
@@ -24,13 +22,13 @@ public class ExamplesSchemaFilter : ISchemaFilter
 
 		if (context.Type == typeof(Models.Pipeline))
 		{
-			// Remove 'TotalTime' from the schema (since it's a calculated property)
 			schema.Properties.Remove("totalTime");
+			schema.Properties.Remove("pipelineRunTime");
 			schema.Example = new OpenApiObject
 			{
 				["id"] = new OpenApiInteger(0),
 				["name"] = new OpenApiString("Sample Pipeline"),
-				["tasks"] = new OpenApiArray(),
+				["items"] = new OpenApiArray(),
 				["description"] = new OpenApiString("This is a sample pipeline description."),
 				["status"] = new OpenApiString("None")
 			};
