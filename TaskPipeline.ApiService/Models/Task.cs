@@ -15,4 +15,5 @@ public class Task
 	/// </summary>
 	public required string CreatedBy { get; set; }
 	public DateTime CreatedDate { get; set; }
+	public bool ShouldCompleteUnsuccessfully { get; set; } = false;
 }

@@ -33,10 +33,11 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		}
 
 		var externalProgramPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, _settings.ExternalConsoleAppPath));
+		var commandLineArgumentsFromTask = $"--delay {task.AverageTime}" + (task.ShouldCompleteUnsuccessfully ? " --throw" : "");
 		var processInfo = new ProcessStartInfo
 		{
 			FileName = externalProgramPath,
-			Arguments = "", // TODO: Pass task-specific arguments for example to force a dummy console app to throw an exception
+			Arguments = commandLineArgumentsFromTask,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			UseShellExecute = false,
@@ -50,7 +51,9 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 			string errors = await process.StandardError.ReadToEndAsync();
 			await process.WaitForExitAsync();
 
-			if (process.ExitCode != 0)
+			// Visual studio debugger shows exitCode=0 for a process that terminated due to unhandled exception. Check for errors to manage this in debug
+			// https://github.com/dotnet/runtime/issues/35599
+			if (process.ExitCode != 0 || !string.IsNullOrEmpty(errors))
 			{
 				throw new Exception($"Task failed with exit code {process.ExitCode}: {errors}");
 			}

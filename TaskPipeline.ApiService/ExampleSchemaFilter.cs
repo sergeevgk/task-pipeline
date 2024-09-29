@@ -16,7 +16,8 @@ public class ExamplesSchemaFilter : ISchemaFilter
 				["averageTime"] = new OpenApiDouble(0),
 				["description"] = new OpenApiString("This is a sample task description."),
 				["createdBy"] = new OpenApiString("Alice"),
-				["createdDate"] = new OpenApiDateTime(DateTime.UtcNow)
+				["createdDate"] = new OpenApiDateTime(DateTime.UtcNow),
+				["shouldCompleteUnsuccessfully"] = new OpenApiBoolean(false)
 			};
 		}
 
