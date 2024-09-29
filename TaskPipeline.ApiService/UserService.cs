@@ -12,7 +12,13 @@ public class UserService
 
 	public bool VerifyToken(string userToken)
 	{
-		var user = _context.Users.FirstOrDefault(user => user.ApiToken == userToken);
+		var user = GetUserByToken(userToken);
 		return user != null;
+	}
+
+	public Models.User GetUserByToken(string userToken)
+	{
+		var user = _context.Users.FirstOrDefault(user => user.ApiToken == userToken);
+		return user;
 	}
 }

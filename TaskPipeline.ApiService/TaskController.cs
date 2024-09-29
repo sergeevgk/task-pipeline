@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using TaskPipeline.ApiService.DAL;
 
 namespace TaskPipeline.ApiService;
@@ -42,7 +43,7 @@ public class TaskController : ControllerBase
 
 	// POST: /tasks
 	[HttpPost]
-	public async Task<IActionResult> CreateTask([FromBody] Models.Task task)
+	public async Task<IActionResult> CreateTask([FromBody] Models.TaskDto taskDto)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -51,6 +52,17 @@ public class TaskController : ControllerBase
 			return Unauthorized("Invalid API token.");
 		}
 
+		var creator = _userService.GetUserByToken(apiKey);
+		var task = new Models.Task
+		{
+			Name = taskDto.Name,
+			Description = taskDto.Description,
+			AverageTime = taskDto.AverageTime,
+			CreatedDate = taskDto.CreatedDate,
+			ShouldCompleteUnsuccessfully = taskDto.ShouldCompleteUnsuccessfully,
+			CreatedBy = creator.Name
+		};
+
 		_context.Tasks.Add(task);
 		await _context.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
@@ -58,7 +70,7 @@ public class TaskController : ControllerBase
 
 	// PUT: /tasks/{id}
 	[HttpPut("{id:int}")]
-	public async Task<IActionResult> UpdateTask(int id, [FromBody] Models.Task updatedTask)
+	public async Task<IActionResult> UpdateTask(int id, [FromBody] Models.TaskDto updatedTaskDto)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -71,11 +83,11 @@ public class TaskController : ControllerBase
 		if (task is null)
 			return NotFound();
 
-		task.Name = updatedTask.Name;
-		task.AverageTime = updatedTask.AverageTime;
-		task.Description = updatedTask.Description;
-		task.CreatedBy = updatedTask.CreatedBy;
-		task.CreatedDate = updatedTask.CreatedDate;
+		task.Name = updatedTaskDto.Name;
+		task.AverageTime = updatedTaskDto.AverageTime;
+		task.Description = updatedTaskDto.Description;
+		task.CreatedDate = updatedTaskDto.CreatedDate;
+		task.ShouldCompleteUnsuccessfully = updatedTaskDto.ShouldCompleteUnsuccessfully;
 
 		await _context.SaveChangesAsync();
 		return NoContent();

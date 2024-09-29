@@ -56,7 +56,6 @@ public class PipelineController : ControllerBase
 		}
 		var pipeline = new Pipeline
 		{
-			Id = pipelineDto.Id,
 			Name = pipelineDto.Name,
 			Description = pipelineDto.Description,
 			Status = pipelineDto.Status
