@@ -1,0 +1,1 @@
+dotnet publish TaskPipeline.ExternalConsoleApp\TaskPipeline.ExternalConsoleApp.csproj /p:PublishProfile=TaskPipeline.ExternalConsoleApp\Properties\PublishProfiles\FolderProfile.pubxml

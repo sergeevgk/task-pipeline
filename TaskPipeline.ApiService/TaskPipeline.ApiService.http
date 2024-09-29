@@ -1,0 +1,6 @@
+@TaskPipeline.ApiService_HostAddress = http://localhost:5042
+
+GET {{TaskPipeline.ApiService_HostAddress}}/tasks/
+Accept: application/json
+
+###
