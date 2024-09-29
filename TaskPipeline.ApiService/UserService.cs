@@ -1,9 +1,11 @@
-﻿namespace TaskPipeline.ApiService;
+﻿using TaskPipeline.ApiService.DAL;
+
+namespace TaskPipeline.ApiService;
 
 public class UserService
 {
-	private UserDbContext _context;
-	public UserService(UserDbContext context)
+	private AppDbContext _context;
+	public UserService(AppDbContext context)
 	{
 		_context = context;
 	}

@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TaskPipeline.ApiService;
+using TaskPipeline.ApiService.DAL;
+using TaskPipeline.ApiService.Exceptions;
 using TaskPipeline.ApiService.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseInMemoryDatabase("TaskPipelineDb"));
-builder.Services.AddDbContext<UserDbContext>(options =>
 	options.UseInMemoryDatabase("TaskPipelineDb"));
 
 builder.Services.AddTransient<UserService>();
@@ -48,6 +48,8 @@ builder.Services.AddSwaggerGen(option =>
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.MapDefaultEndpoints();
 app.MapControllers().AllowAnonymous();
 
@@ -55,10 +57,11 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+	app.UseDeveloperExceptionPage();
 
 	using var scope = app.Services.CreateScope();
 	var services = scope.ServiceProvider;
-	var userDb = services.GetRequiredService<UserDbContext>();
+	var userDb = services.GetRequiredService<AppDbContext>();
 	userDb.Database.EnsureCreated();
 }
 
@@ -75,13 +78,13 @@ userApi.MapGet("/", GetAllUsers);
 userApi.MapPost("/", CreateUser);
 
 // User Handlers
-static async Task<IResult> GetAllUsers(UserDbContext db)
+static async Task<IResult> GetAllUsers(AppDbContext db)
 {
 	var users = await db.Users.ToListAsync();
 	return Results.Ok(users);
 }
 
-static async Task<IResult> CreateUser(User user, UserDbContext db)
+static async Task<IResult> CreateUser(User user, AppDbContext db)
 {
 	db.Users.Add(user);
 	await db.SaveChangesAsync();

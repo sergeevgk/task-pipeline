@@ -1,14 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskPipeline.ApiService.Models;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.DAL;
 
-public class UserDbContext : DbContext
+public class AppDbContext : DbContext
 {
-	public UserDbContext(DbContextOptions<UserDbContext> options)
+	public AppDbContext(DbContextOptions<AppDbContext> options)
 	: base(options) { }
 
 	public DbSet<User> Users => Set<User>();
+	public DbSet<Models.Task> Tasks => Set<Models.Task>();
+	public DbSet<Pipeline> Pipelines => Set<Pipeline>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{

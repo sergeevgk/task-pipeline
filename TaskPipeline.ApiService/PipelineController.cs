@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TaskPipeline.ApiService.DAL;
 using TaskPipeline.ApiService.Models;
 
 namespace TaskPipeline.ApiService;
