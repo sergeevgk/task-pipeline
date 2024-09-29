@@ -8,8 +8,7 @@ using TaskPipeline.ApiService.Models;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-	options.UseInMemoryDatabase("TaskPipelineDb"));
+builder.Services.AddDbContext<AppDbContext>();
 
 builder.Services.AddTransient<UserService>();
 

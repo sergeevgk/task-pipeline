@@ -5,12 +5,21 @@ namespace TaskPipeline.ApiService.DAL;
 
 public class AppDbContext : DbContext
 {
-	public AppDbContext(DbContextOptions<AppDbContext> options)
-	: base(options) { }
-
 	public DbSet<User> Users => Set<User>();
 	public DbSet<Models.Task> Tasks => Set<Models.Task>();
 	public DbSet<Pipeline> Pipelines => Set<Pipeline>();
+	public string DbPath { get; }
+
+	public AppDbContext(DbContextOptions<AppDbContext> options)
+	: base(options) 
+	{
+		var folder = Environment.SpecialFolder.LocalApplicationData;
+		var path = Environment.GetFolderPath(folder);
+		DbPath = Path.Join(path, "task_pipeline.db");
+	}
+
+	protected override void OnConfiguring(DbContextOptionsBuilder options)
+		=> options.UseSqlite($"Data Source={DbPath}");
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
