@@ -6,8 +6,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.AppHost", "Tas
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.ServiceDefaults", "TaskPipeline.ServiceDefaults\TaskPipeline.ServiceDefaults.csproj", "{CDC39B6F-1405-445B-88CB-F3CBB478F764}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.Tests", "TaskPipeline.Tests\TaskPipeline.Tests.csproj", "{F434DCC3-75D0-4D75-B675-2FF5191B2640}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.ApiService", "TaskPipeline.ApiService\TaskPipeline.ApiService.csproj", "{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskPipeline.ExternalConsoleApp", "TaskPipeline.ExternalConsoleApp\TaskPipeline.ExternalConsoleApp.csproj", "{5A19242E-948C-4376-ACAC-9B679B65B76C}"
@@ -26,10 +24,6 @@ Global
 		{CDC39B6F-1405-445B-88CB-F3CBB478F764}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDC39B6F-1405-445B-88CB-F3CBB478F764}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDC39B6F-1405-445B-88CB-F3CBB478F764}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F434DCC3-75D0-4D75-B675-2FF5191B2640}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F434DCC3-75D0-4D75-B675-2FF5191B2640}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F434DCC3-75D0-4D75-B675-2FF5191B2640}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F434DCC3-75D0-4D75-B675-2FF5191B2640}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
