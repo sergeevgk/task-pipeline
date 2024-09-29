@@ -192,8 +192,8 @@ public class PipelineController : ControllerBase
 	}
 
 	// POST: /pipelines/{id}/run
-	[HttpPost("{pipelineId}/run")]
-	public async Task<IActionResult> RunPipeline(int pipelineId)
+	[HttpPost("{id:int}/run")]
+	public async Task<IActionResult> RunPipeline(int id)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -205,7 +205,7 @@ public class PipelineController : ControllerBase
 		var pipeline = await _appDbContext.Pipelines
 			.Include(p => p.Items)
 			.ThenInclude(i => i.Task)
-			.FirstOrDefaultAsync(p => p.Id == pipelineId);
+			.FirstOrDefaultAsync(p => p.Id == id);
 
 		if (pipeline == null)
 		{
