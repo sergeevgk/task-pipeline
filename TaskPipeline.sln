@@ -10,6 +10,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.Tests", "TaskP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskPipeline.ApiService", "TaskPipeline.ApiService\TaskPipeline.ApiService.csproj", "{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskPipeline.ExternalConsoleApp", "TaskPipeline.ExternalConsoleApp\TaskPipeline.ExternalConsoleApp.csproj", "{5A19242E-948C-4376-ACAC-9B679B65B76C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +34,10 @@ Global
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE0A977A-34C9-4A3D-821F-C50D7D05ED6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A19242E-948C-4376-ACAC-9B679B65B76C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A19242E-948C-4376-ACAC-9B679B65B76C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A19242E-948C-4376-ACAC-9B679B65B76C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A19242E-948C-4376-ACAC-9B679B65B76C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
