@@ -46,7 +46,7 @@ public class PipelineController : ControllerBase
 
 	// POST: /pipelines
 	[HttpPost]
-	public async Task<IActionResult> CreatePipeline([FromBody] Pipeline pipeline)
+	public async Task<IActionResult> CreatePipeline([FromBody] PipelineDto pipelineDto)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -54,6 +54,14 @@ public class PipelineController : ControllerBase
 		{
 			return Unauthorized("Invalid API token.");
 		}
+		var pipeline = new Pipeline
+		{
+			Id = pipelineDto.Id,
+			Name = pipelineDto.Name,
+			Description = pipelineDto.Description,
+			Status = pipelineDto.Status
+		};
+
 		_appDbContext.Pipelines.Add(pipeline);
 		await _appDbContext.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetPipelineById), new { id = pipeline.Id }, pipeline);
@@ -61,7 +69,7 @@ public class PipelineController : ControllerBase
 
 	// PUT: /pipelines/{id}
 	[HttpPut("{id:int}")]
-	public async Task<IActionResult> UpdatePipeline(int id, [FromBody] Pipeline updatedPipeline)
+	public async Task<IActionResult> UpdatePipeline(int id, [FromBody] PipelineDto updatedPipeline)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -79,7 +87,6 @@ public class PipelineController : ControllerBase
 			return NotFound();
 
 		pipeline.Name = updatedPipeline.Name;
-		pipeline.Items = updatedPipeline.Items;
 		pipeline.Description = updatedPipeline.Description;
 		pipeline.Status = updatedPipeline.Status;
 
@@ -169,8 +176,6 @@ public class PipelineController : ControllerBase
 			return NotFound($"Task with id [{taskId}] is not found in pipeline [{pipelineId}]");
 
 		pipeline.Items.Remove(pipelineItem);
-		pipelineItem.PipelineId = 0;
-		pipelineItem.Pipeline = null;
 
 		await _appDbContext.SaveChangesAsync();
 		return NoContent();

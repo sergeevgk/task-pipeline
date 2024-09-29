@@ -3,8 +3,8 @@
 public record PipelineItem
 {
 	public int Id { get; set; }
-	public required int TaskId { get; set; }
-	public required Task Task { get; set; }
-	public required int PipelineId { get; set; }
-	public required Pipeline Pipeline { get; set; }
+	public required int TaskId { get; init; }
+	public Task Task { get; init; }
+	public required int PipelineId { get; init; }
+	public Pipeline Pipeline { get; init; }
 }
