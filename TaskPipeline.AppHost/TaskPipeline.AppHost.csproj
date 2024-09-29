@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TaskPipeline.ApiService\TaskPipeline.ApiService.csproj" />
+    <ProjectReference Include="..\TaskPipeline.ExternalConsoleApp\TaskPipeline.ExternalConsoleApp.csproj" />
   </ItemGroup>
 
 </Project>
