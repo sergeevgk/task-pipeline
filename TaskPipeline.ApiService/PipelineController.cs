@@ -196,6 +196,13 @@ public class PipelineController : ControllerBase
 	[HttpPost("{pipelineId}/run")]
 	public async Task<IActionResult> RunPipeline(int pipelineId)
 	{
+		var apiKey = Request.Headers["UserApiKey"].ToString();
+		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+		if (!isValid)
+		{
+			return Unauthorized("Invalid API token.");
+		}
+
 		var pipeline = await _appDbContext.Pipelines
 			.Include(p => p.Items)
 			.ThenInclude(i => i.Task)
