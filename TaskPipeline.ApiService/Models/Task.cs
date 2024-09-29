@@ -1,5 +1,4 @@
-﻿using ThreadingTasks = System.Threading.Tasks;
-namespace TaskPipeline.ApiService.Models;
+﻿namespace TaskPipeline.ApiService.Models;
 
 public class Task
 {
@@ -16,13 +15,4 @@ public class Task
 	/// </summary>
 	public required string CreatedBy { get; set; }
 	public DateTime CreatedDate { get; set; }
-
-	public async ThreadingTasks.Task RunAsync()
-	{
-		var taskRunTimeInMs = (int)Math.Ceiling(AverageTime * 1000);
-		// emulate some task running asynchronously
-		await ThreadingTasks.Task.Delay(taskRunTimeInMs);
-
-		return;
-	}
 }

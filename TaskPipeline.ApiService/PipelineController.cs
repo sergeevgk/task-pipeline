@@ -11,11 +11,13 @@ public class PipelineController : ControllerBase
 {
 	private readonly AppDbContext _appDbContext;
 	private readonly UserService _userService;
+	private readonly ITaskRunManager _taskRunManager;
 
-	public PipelineController(AppDbContext taskDbContext, UserService userService)
+	public PipelineController(AppDbContext taskDbContext, UserService userService, ITaskRunManager taskRunManager)
 	{
 		_appDbContext = taskDbContext ?? throw new ArgumentNullException(nameof(taskDbContext));
 		_userService = userService ?? throw new ArgumentNullException(nameof(userService));
+		_taskRunManager = taskRunManager ?? throw new ArgumentNullException(nameof(taskRunManager));
 	}
 
 	#region pipeline CRUD
@@ -106,7 +108,7 @@ public class PipelineController : ControllerBase
 	}
 	#endregion
 
-	#region pipeline tasks operations
+	#region pipeline items operations
 	// POST: /pipelines/{pipelineId}/tasks/{taskId}
 	[HttpPost("{pipelineId:int}/tasks/{taskId:int}")]
 	public async Task<IActionResult> AddTaskToPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
@@ -185,6 +187,7 @@ public class PipelineController : ControllerBase
 		return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
 	}
 
+	// POST: /pipelines/{id}/run
 	[HttpPost("{pipelineId}/run")]
 	public async Task<IActionResult> RunPipeline(int pipelineId)
 	{
@@ -208,11 +211,13 @@ public class PipelineController : ControllerBase
 		double actualRunTime = 0;
 		try
 		{
-			actualRunTime = await pipeline.RunAsync();
+			actualRunTime = await _taskRunManager.RunSequentialAsync(pipeline.Items);
 		}
-		catch (Exception)
+		catch (Exception ex)
 		{
-			// TODO: log some details
+			Console.WriteLine($"Pipeline run failed with error: {ex.Message}");
+			pipeline.Status = PipelineStatus.Failed;
+			await _appDbContext.SaveChangesAsync();
 			throw;
 		}
 

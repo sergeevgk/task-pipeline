@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using ThreadingTasks = System.Threading.Tasks;
 namespace TaskPipeline.ApiService.Models;
 
 public enum PipelineStatus
@@ -9,7 +8,9 @@ public enum PipelineStatus
 	[Description("Pipeline run is in progress")]
 	Running,
 	[Description("Pipeline run is finished")]
-	Finished
+	Finished,
+	[Description("Pipeline run failed")]
+	Failed
 }
 
 public class Pipeline
@@ -29,21 +30,4 @@ public class Pipeline
 	public string? Description { get; set; }
 	public PipelineStatus Status { get; set; }
 	public List<PipelineItem> Items { get; set; } = [];
-
-	/// <summary>
-	/// Runs the Tasks included in the pipeline.
-	/// </summary>
-	/// <returns>Pipeline run time.</returns>
-	public async Task<double> RunAsync() 
-	{
-		var watch = System.Diagnostics.Stopwatch.StartNew();
-
-		// todo: revisit this as it is not sequential execution
-		await ThreadingTasks.Task.WhenAll(Items.Select(i => i.Task.RunAsync()));
-
-		watch.Stop();
-		var elapsedMs = watch.ElapsedMilliseconds;
-		var pipelineRunTimeInSeconds = Math.Ceiling(1.0 * elapsedMs / 1000);
-		return pipelineRunTimeInSeconds;
-	}
 }

@@ -8,9 +8,16 @@ using TaskPipeline.ApiService.Models;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
+// Configure External Programs
+builder.Services.Configure<ExternalProgramSettings>(options =>
+{
+	builder.Configuration.GetSection("ExternalPrograms").Bind(options);
+});
+
 builder.Services.AddDbContext<AppDbContext>();
 
 builder.Services.AddTransient<UserService>();
+builder.Services.AddTransient<ITaskRunManager, LocalProcessTaskRunManager>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
