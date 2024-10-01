@@ -13,12 +13,14 @@ public class PipelineController : ControllerBase
 	private readonly AppDbContext _appDbContext;
 	private readonly UserService _userService;
 	private readonly ITaskRunManager _taskRunManager;
+	private readonly IPipelineManager _pipelineManager;
 
-	public PipelineController(AppDbContext taskDbContext, UserService userService, ITaskRunManager taskRunManager)
+	public PipelineController(AppDbContext taskDbContext, UserService userService, ITaskRunManager taskRunManager, IPipelineManager pipelineManager)
 	{
 		_appDbContext = taskDbContext ?? throw new ArgumentNullException(nameof(taskDbContext));
 		_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		_taskRunManager = taskRunManager ?? throw new ArgumentNullException(nameof(taskRunManager));
+		_pipelineManager = pipelineManager ?? throw new ArgumentNullException(nameof(pipelineManager));
 	}
 
 	#region pipeline CRUD
@@ -210,20 +212,28 @@ public class PipelineController : ControllerBase
 
 		if (pipeline == null)
 		{
-			return NotFound(new { message = "Pipeline not found." });
+			return NotFound(new { message = $"Pipeline {id} not found." });
 		}
 
 		if (pipeline.Status == PipelineStatus.Running)
 		{
-			return Conflict(new { message = "Pipeline is already running." });
+			return Conflict(new { message = $"Pipeline {id} is already running." });
 		}
 
 		pipeline.Status = PipelineStatus.Running;
 		await _appDbContext.SaveChangesAsync();
+
+		var token = _pipelineManager.IssuePipelineRunCancellationToken(id);
+
 		double actualRunTime = 0;
 		try
 		{
-			actualRunTime = await _taskRunManager.RunSequentialAsync(pipeline.Items);
+			actualRunTime = await _taskRunManager.RunSequentialAsync(pipeline.Items, token);
+		}
+		catch (OperationCanceledException ex)
+		{
+			Console.WriteLine($"Pipeline {id} was stopped: {ex.Message}");
+			return Ok($"Pipeline {id} was stopped");
 		}
 		catch (Exception ex)
 		{
@@ -237,8 +247,58 @@ public class PipelineController : ControllerBase
 		pipeline.Status = PipelineStatus.Finished;
 		await _appDbContext.SaveChangesAsync();
 
-		return Ok($"Pipeline has finished running in {actualRunTime} seconds.");
+		if (!_pipelineManager.TryUtilizePipelineRunCancellationToken(id))
+		{
+			Console.WriteLine($"Error utilizing the pipeline {id} cancellation token.");
+		}
+
+		return Ok($"Pipeline {id} has finished running in {actualRunTime} seconds.");
 		// TODO: return accepted and subscribe to the result instead of waiting
 		// return Accepted(new { message = "Pipeline run has been started", pipelineId = pipelineId, status = pipeline.Status });
+	}
+
+	// POST: /pipelines/{id}/stop
+	[HttpPost("{id:int}/stop")]
+	public async Task<IActionResult> StopPipeline(int id)
+	{
+		var apiKey = Request.Headers["UserApiKey"].ToString();
+		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+		if (!isValid)
+		{
+			return Unauthorized("Invalid API token.");
+		}
+
+		var pipeline = await _appDbContext.Pipelines
+			.Include(p => p.Items)
+			.ThenInclude(i => i.Task)
+			.FirstOrDefaultAsync(p => p.Id == id);
+
+		if (pipeline == null)
+		{
+			return NotFound(new { message = $"Pipeline {id} not found." });
+		}
+
+		if (pipeline.Status != PipelineStatus.Running)
+		{
+			return Conflict(new { message = $"Pipeline {id} is not running." });
+		}
+
+		try
+		{
+			if (!_pipelineManager.TryStopPipeline(id))
+				throw new ApplicationException($"Unable to stop pipeline {id}.");
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Pipeline {id} stop failed with error: {ex.Message}");
+			pipeline.Status = PipelineStatus.Failed;
+			await _appDbContext.SaveChangesAsync();
+			throw;
+		}
+
+		pipeline.Status = PipelineStatus.Stopped;
+		await _appDbContext.SaveChangesAsync();
+
+		return Ok($"Pipeline {id} was stopped successfully."); ;
 	}
 }

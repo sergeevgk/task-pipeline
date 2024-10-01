@@ -13,7 +13,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		_settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 	}
 
-	public async Task RunAsync(PipelineItem item)
+	public async Task RunAsync(PipelineItem item, CancellationToken cancellationToken)
 	{
 		var task = item.Task;
 		if (task == null)
@@ -27,7 +27,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 
 			var taskRunTimeInMs = (int)Math.Ceiling(task.AverageTime * 1000);
 			// emulate some task running asynchronously
-			await Task.Delay(taskRunTimeInMs);
+			await Task.Delay(taskRunTimeInMs, cancellationToken);
 
 			Console.WriteLine("Dummy tusk run is completed.");
 			return;
@@ -44,23 +44,34 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 			UseShellExecute = false,
 			CreateNoWindow = true
 		};
-
-		using (var process = new Process { StartInfo = processInfo })
+		
+		if (cancellationToken.IsCancellationRequested)
 		{
-			process.Start();
-			string output = await process.StandardOutput.ReadToEndAsync();
-			string errors = await process.StandardError.ReadToEndAsync();
-			await process.WaitForExitAsync();
-
-			// Visual studio debugger shows exitCode=0 for a process that terminated due to unhandled exception. Check for errors to manage this in debug
-			// https://github.com/dotnet/runtime/issues/35599
-			if (process.ExitCode != 0 || !string.IsNullOrEmpty(errors))
-			{
-				throw new Exception($"Task failed with exit code {process.ExitCode}: {errors}");
-			}
-
-			Console.WriteLine(output);
+			throw new OperationCanceledException($"Pipeline task {task.Id} was canceled before starting an external process.");
 		}
+
+		using var process = new Process { StartInfo = processInfo };
+		process.Start();
+		using var registration = cancellationToken.Register(process.Kill);
+
+		string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+		string errors = await process.StandardError.ReadToEndAsync(cancellationToken);
+		await process.WaitForExitAsync(cancellationToken);
+
+		// not sure if the OperationCanceledException should be thrown explicitly here.
+		if (cancellationToken.IsCancellationRequested)
+		{
+			throw new OperationCanceledException($"Pipeline task {task.Id} was canceled with the external process {externalProgramPath}.");
+		}
+
+		// Visual studio debugger shows exitCode=0 for a process that terminated due to unhandled exception. Check for errors to manage this in debug
+		// https://github.com/dotnet/runtime/issues/35599
+		if (process.ExitCode != 0 || !string.IsNullOrEmpty(errors))
+		{
+			throw new Exception($"Task failed with exit code {process.ExitCode}: {errors}");
+		}
+
+		Console.WriteLine(output);
 	}
 
 	/// <summary>
@@ -69,11 +80,11 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunBatchAsync(List<PipelineItem> tasks)
+	public async Task<double> RunBatchAsync(List<PipelineItem> tasks, CancellationToken cancellationToken)
 	{
 		var watch = Stopwatch.StartNew();
-
-		await Task.WhenAll(tasks.Select(t => RunAsync(t)));
+		
+		await Task.WhenAll(tasks.Select(t => RunAsync(t, cancellationToken)));
 
 		watch.Stop();
 		var elapsedMs = watch.ElapsedMilliseconds;
@@ -87,13 +98,14 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunSequentialAsync(List<PipelineItem> tasks)
+	public async Task<double> RunSequentialAsync(List<PipelineItem> tasks, CancellationToken cancellationToken)
 	{
 		var watch = Stopwatch.StartNew();
 
 		foreach (var task in tasks)
 		{
-			await RunAsync(task);
+			cancellationToken.ThrowIfCancellationRequested();
+			await RunAsync(task, cancellationToken);
 		}
 
 		watch.Stop();

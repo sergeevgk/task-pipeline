@@ -11,7 +11,9 @@ public enum PipelineStatus
 	[Description("Pipeline run is finished")]
 	Finished,
 	[Description("Pipeline run failed")]
-	Failed
+	Failed,
+	[Description("Pipeline run canceled")] 
+	Stopped
 }
 
 public class Pipeline
