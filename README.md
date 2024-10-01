@@ -19,6 +19,7 @@ Overview of a web API project:
 
 ## Plans
 - [ ] Add Cancellation tokens to the pipeline run methods and 'cancel run' endpoint.
+- [ ] Handle the concurrent pipeline Start/Stop operations - prevent the pipeline from being run more than once concurrently.
 - [ ] Add MongoDB through a repository pattern or using a [preview EF Nuget package for MongoDB](https://www.mongodb.com/docs/entity-framework/current/). Use it instead of current SQLite db.
 - [ ] Implement the subsription to the pipeline run results instead of waiting.
 - [ ] Add a new type of runnable tasks - using gRPC or Azure Functions.
