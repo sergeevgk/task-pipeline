@@ -18,6 +18,7 @@ Overview of a web API project:
 	- This actually runs locally a preconfigured external application (see appsettings.json, `ExternalProgramSettings` and `LocalProcessTaskRunManager`). To find out the options for the external application, see `TaskPipeline.ExternalConsoleApp` project.
 
 ## Plans
+- [ ] Fix the DELETE /pipelines/pipelineId/tasks/taskId endpoint. Currently only allows to remove a first PipelineItem related to the taskId Task. It should be DELETE /pipelines/pipelineId/items/itemId instead.
 - [ ] Add Cancellation tokens to the pipeline run methods and 'cancel run' endpoint.
 - [ ] Handle the concurrent pipeline Start/Stop operations - prevent the pipeline from being run more than once concurrently.
 - [ ] Add MongoDB through a repository pattern or using a [preview EF Nuget package for MongoDB](https://www.mongodb.com/docs/entity-framework/current/). Use it instead of current SQLite db.
