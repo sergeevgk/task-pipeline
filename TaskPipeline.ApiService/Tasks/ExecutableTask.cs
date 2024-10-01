@@ -1,4 +1,4 @@
-﻿namespace TaskPipeline.ApiService.Models;
+﻿namespace TaskPipeline.ApiService.Tasks;
 
 public class ExecutableTask
 {

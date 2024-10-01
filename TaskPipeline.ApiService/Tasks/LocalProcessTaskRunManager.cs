@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using TaskPipeline.ApiService.Pipelines;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.Tasks;
 
 public class LocalProcessTaskRunManager : ITaskRunManager
 {
@@ -12,7 +13,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		_settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 	}
 
-	public async Task RunAsync(Models.PipelineItem item)
+	public async Task RunAsync(PipelineItem item)
 	{
 		var task = item.Task;
 		if (task == null)
@@ -68,7 +69,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunBatchAsync(List<Models.PipelineItem> tasks)
+	public async Task<double> RunBatchAsync(List<PipelineItem> tasks)
 	{
 		var watch = Stopwatch.StartNew();
 
@@ -86,7 +87,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunSequentialAsync(List<Models.PipelineItem> tasks)
+	public async Task<double> RunSequentialAsync(List<PipelineItem> tasks)
 	{
 		var watch = Stopwatch.StartNew();
 

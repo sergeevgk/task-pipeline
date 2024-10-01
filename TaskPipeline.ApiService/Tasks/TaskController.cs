@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskPipeline.ApiService.DAL;
+using TaskPipeline.ApiService.Users;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.Tasks;
 
 [ApiController]
 [Route("tasks")]
@@ -42,7 +43,7 @@ public class TaskController : ControllerBase
 
 	// POST: /tasks
 	[HttpPost]
-	public async Task<IActionResult> CreateTask([FromBody] Models.ExecutableTaskDto taskDto)
+	public async Task<IActionResult> CreateTask([FromBody] ExecutableTaskDto taskDto)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -52,7 +53,7 @@ public class TaskController : ControllerBase
 		}
 
 		var creator = _userService.GetUserByToken(apiKey);
-		var task = new Models.ExecutableTask
+		var task = new ExecutableTask
 		{
 			Name = taskDto.Name,
 			Description = taskDto.Description,
@@ -69,7 +70,7 @@ public class TaskController : ControllerBase
 
 	// PUT: /tasks/{id}
 	[HttpPut("{id:int}")]
-	public async Task<IActionResult> UpdateTask(int id, [FromBody] Models.ExecutableTaskDto updatedTaskDto)
+	public async Task<IActionResult> UpdateTask(int id, [FromBody] ExecutableTaskDto updatedTaskDto)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);

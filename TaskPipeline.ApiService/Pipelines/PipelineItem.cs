@@ -1,4 +1,6 @@
-﻿namespace TaskPipeline.ApiService.Models;
+﻿using TaskPipeline.ApiService.Tasks;
+
+namespace TaskPipeline.ApiService.Pipelines;
 
 public record PipelineItem
 {

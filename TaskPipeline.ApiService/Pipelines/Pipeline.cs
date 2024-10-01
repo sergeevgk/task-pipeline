@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-namespace TaskPipeline.ApiService.Models;
+
+namespace TaskPipeline.ApiService.Pipelines;
 
 public enum PipelineStatus
 {

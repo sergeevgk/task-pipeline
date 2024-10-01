@@ -1,13 +1,15 @@
 ﻿using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using TaskPipeline.ApiService.Pipelines;
+using TaskPipeline.ApiService.Tasks;
 
 namespace TaskPipeline.ApiService;
 public class ExamplesSchemaFilter : ISchemaFilter
 {
 	public void Apply(OpenApiSchema schema, SchemaFilterContext context)
 	{
-		if (context.Type == typeof(Models.ExecutableTaskDto))
+		if (context.Type == typeof(ExecutableTaskDto))
 		{
 			schema.Example = new OpenApiObject
 			{
@@ -20,7 +22,7 @@ public class ExamplesSchemaFilter : ISchemaFilter
 			};
 		}
 
-		if (context.Type == typeof(Models.PipelineDto))
+		if (context.Type == typeof(PipelineDto))
 		{
 			schema.Example = new OpenApiObject
 			{

@@ -1,12 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TaskPipeline.ApiService.Models;
+using TaskPipeline.ApiService.Pipelines;
+using TaskPipeline.ApiService.Tasks;
+using TaskPipeline.ApiService.Users;
 
 namespace TaskPipeline.ApiService.DAL;
 
 public class AppDbContext : DbContext
 {
 	public DbSet<User> Users => Set<User>();
-	public DbSet<Models.ExecutableTask> Tasks => Set<Models.ExecutableTask>();
+	public DbSet<ExecutableTask> Tasks => Set<ExecutableTask>();
 	public DbSet<Pipeline> Pipelines => Set<Pipeline>();
 	public string DbPath { get; }
 

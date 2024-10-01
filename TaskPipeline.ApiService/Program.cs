@@ -3,7 +3,8 @@ using Microsoft.OpenApi.Models;
 using TaskPipeline.ApiService;
 using TaskPipeline.ApiService.DAL;
 using TaskPipeline.ApiService.Exceptions;
-using TaskPipeline.ApiService.Models;
+using TaskPipeline.ApiService.Tasks;
+using TaskPipeline.ApiService.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();

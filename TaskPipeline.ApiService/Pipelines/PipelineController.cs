@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskPipeline.ApiService.DAL;
-using TaskPipeline.ApiService.Models;
+using TaskPipeline.ApiService.Tasks;
+using TaskPipeline.ApiService.Users;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.Pipelines;
 
 [ApiController]
 [Route("pipelines")]
