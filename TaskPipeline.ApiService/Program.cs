@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Converters;
 using TaskPipeline.ApiService;
 using TaskPipeline.ApiService.DAL;
 using TaskPipeline.ApiService.Exceptions;
+using TaskPipeline.ApiService.Pipelines;
 using TaskPipeline.ApiService.Tasks;
 using TaskPipeline.ApiService.Users;
 
@@ -19,12 +21,15 @@ builder.Services.AddDbContext<AppDbContext>();
 
 builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<ITaskRunManager, LocalProcessTaskRunManager>();
+builder.Services.AddSingleton<IPipelineManager, PipelineManager>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddControllers().AddNewtonsoftJson(options =>
-	options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
-);
+builder.Services.AddControllers().AddNewtonsoftJson(options => {
+	options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+	options.SerializerSettings.Converters.Add(new StringEnumConverter());
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option =>
 {
