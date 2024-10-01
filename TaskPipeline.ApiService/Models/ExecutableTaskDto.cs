@@ -2,7 +2,7 @@
 
 namespace TaskPipeline.ApiService.Models;
 
-public class TaskDto
+public class ExecutableTaskDto
 {
 	public int Id { get; set; }
 	public required string Name { get; set; }

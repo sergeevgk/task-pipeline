@@ -1,6 +1,6 @@
 ﻿namespace TaskPipeline.ApiService.Models;
 
-public class Task
+public class ExecutableTask
 {
 	public int Id { get; set; }
 	public required string Name { get; set; }

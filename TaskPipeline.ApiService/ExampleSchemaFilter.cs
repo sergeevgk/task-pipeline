@@ -7,7 +7,7 @@ public class ExamplesSchemaFilter : ISchemaFilter
 {
 	public void Apply(OpenApiSchema schema, SchemaFilterContext context)
 	{
-		if (context.Type == typeof(Models.TaskDto))
+		if (context.Type == typeof(Models.ExecutableTaskDto))
 		{
 			schema.Example = new OpenApiObject
 			{

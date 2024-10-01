@@ -6,7 +6,7 @@ namespace TaskPipeline.ApiService.DAL;
 public class AppDbContext : DbContext
 {
 	public DbSet<User> Users => Set<User>();
-	public DbSet<Models.Task> Tasks => Set<Models.Task>();
+	public DbSet<Models.ExecutableTask> Tasks => Set<Models.ExecutableTask>();
 	public DbSet<Pipeline> Pipelines => Set<Pipeline>();
 	public string DbPath { get; }
 

@@ -14,7 +14,7 @@ public class MongoDbContext : DbContext
         _database = client.GetDatabase("YourDatabaseName");
     }
 
-    public IMongoCollection<Models.Task> Tasks => _database.GetCollection<Models.Task>("Tasks");
+    public IMongoCollection<Models.ExecutableTask> Tasks => _database.GetCollection<Models.ExecutableTask>("Tasks");
     public IMongoCollection<Pipeline> Pipelines => _database.GetCollection<Pipeline>("Pipelines");
     public IMongoCollection<User> Users => _database.GetCollection<User>("Users");
 }
