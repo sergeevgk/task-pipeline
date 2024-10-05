@@ -154,9 +154,9 @@ public class PipelineController : ControllerBase
 		return Ok(pipeline);
 	}
 
-	// DELETE: /pipelines/{pipelineId}/tasks/{taskId}
-	[HttpDelete("{pipelineId:int}/tasks/{taskId:int}")]
-	public async Task<IActionResult> RemoveTaskFromPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
+	// DELETE: /pipelines/{pipelineId}/items/{itemId}
+	[HttpDelete("{pipelineId:int}/items/{itemId:int}")]
+	public async Task<IActionResult> RemoveItemFromPipeline([FromRoute] int pipelineId, [FromRoute] int itemId)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -167,15 +167,14 @@ public class PipelineController : ControllerBase
 
 		var pipeline = await _appDbContext.Pipelines
 			.Include(p => p.Items)
-			.ThenInclude(i => i.Task)
 			.FirstOrDefaultAsync(p => p.Id == pipelineId);
 
 		if (pipeline is null)
 			return NotFound($"Pipeline with id [{pipelineId}] is not found");
 
-		var pipelineItem = pipeline.Items.FirstOrDefault(t => t.Task.Id == taskId);
+		var pipelineItem = pipeline.Items.FirstOrDefault(pItem => pItem.Id == itemId);
 		if (pipelineItem is null)
-			return NotFound($"Task with id [{taskId}] is not found in pipeline [{pipelineId}]");
+			return NotFound($"PipelineItem with id [{itemId}] is not found in pipeline [{pipelineId}]");
 
 		pipeline.Items.Remove(pipelineItem);
 
@@ -188,7 +187,11 @@ public class PipelineController : ControllerBase
 	[HttpGet("{id:int}/time")]
 	public async Task<IActionResult> GetPipelineTotalTimeById(int id)
 	{
-		var pipeline = await _appDbContext.Pipelines.FirstOrDefaultAsync(p => p.Id == id);
+		var pipeline = await _appDbContext.Pipelines
+			.Include(p => p.Items)
+			.ThenInclude(i => i.Task)
+			.FirstOrDefaultAsync(p => p.Id == id);
+
 		// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
 		// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
 		return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
