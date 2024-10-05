@@ -13,7 +13,8 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		_settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 	}
 
-	public async Task RunAsync(PipelineItem item, CancellationToken cancellationToken)
+	/// <inheritdoc/>
+	public async Task<double> RunAsync(PipelineItem item, CancellationToken cancellationToken)
 	{
 		var task = item.Task;
 		if (task == null)
@@ -30,7 +31,7 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 			await Task.Delay(taskRunTimeInMs, cancellationToken);
 
 			Console.WriteLine("Dummy tusk run is completed.");
-			return;
+			return task.AverageTime;
 		}
 
 		var externalProgramPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, _settings.ExternalConsoleAppPath));
@@ -72,11 +73,16 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		}
 
 		Console.WriteLine(output);
+		var elapsedTimeSeconds = (process.StartTime - process.ExitTime).TotalSeconds;
+		Console.WriteLine($"Process run took {elapsedTimeSeconds} seconds.");
+
+		return elapsedTimeSeconds;
 	}
 
 	/// <summary>
 	/// Runs several tasks. For now simply Task.WhenAll() RunTask actions for every task in the list.
 	/// Maybe there is a way to optimize.
+	/// Calculates total time of pipeline run because all the tasks are available at once.
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
@@ -87,14 +93,14 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		await Task.WhenAll(tasks.Select(t => RunAsync(t, cancellationToken)));
 
 		watch.Stop();
-		var elapsedMs = watch.ElapsedMilliseconds;
-		var pipelineRunTimeInSeconds = Math.Ceiling(1.0 * elapsedMs / 1000);
-
-		return pipelineRunTimeInSeconds;
+		var elapsedSeconds = watch.Elapsed.TotalSeconds;
+	
+		return elapsedSeconds;
 	}
 
 	/// <summary>
 	/// Runs several tasks. For now simply calls RunTask for every task in the list sequentially.
+	/// Calculates total time of pipeline run because all the tasks are available at once.
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <returns>Pipeline run time in seconds.</returns>
@@ -109,9 +115,8 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 		}
 
 		watch.Stop();
-		var elapsedMs = watch.ElapsedMilliseconds;
-		var pipelineRunTimeInSeconds = Math.Ceiling(1.0 * elapsedMs / 1000);
+		var elapsedSeconds = watch.Elapsed.TotalSeconds;
 
-		return pipelineRunTimeInSeconds;
+		return elapsedSeconds;
 	}
 }

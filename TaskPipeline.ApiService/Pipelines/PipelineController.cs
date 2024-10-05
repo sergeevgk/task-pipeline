@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Channels;
 using TaskPipeline.ApiService.DAL;
 using TaskPipeline.ApiService.Tasks;
 using TaskPipeline.ApiService.Users;
@@ -14,13 +16,19 @@ public class PipelineController : ControllerBase
 	private readonly UserService _userService;
 	private readonly ITaskRunManager _taskRunManager;
 	private readonly IPipelineManager _pipelineManager;
+	private readonly Channel<PipelineRunEvent> _pipelineRunChannel;
 
-	public PipelineController(AppDbContext taskDbContext, UserService userService, ITaskRunManager taskRunManager, IPipelineManager pipelineManager)
+	public PipelineController(AppDbContext taskDbContext,
+		UserService userService,
+		ITaskRunManager taskRunManager,
+		IPipelineManager pipelineManager,
+		Channel<PipelineRunEvent> pipelineRunChannel)
 	{
 		_appDbContext = taskDbContext ?? throw new ArgumentNullException(nameof(taskDbContext));
 		_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		_taskRunManager = taskRunManager ?? throw new ArgumentNullException(nameof(taskRunManager));
 		_pipelineManager = pipelineManager ?? throw new ArgumentNullException(nameof(pipelineManager));
+		_pipelineRunChannel = pipelineRunChannel ?? throw new ArgumentNullException(nameof(pipelineRunChannel));
 	}
 
 	#region pipeline CRUD
@@ -146,8 +154,15 @@ public class PipelineController : ControllerBase
 			Pipeline = pipeline,
 			PipelineId = pipelineId,
 			Task = task,
-			TaskId = taskId
+			TaskId = taskId,
+			NextItem = null
 		};
+
+		var lastItem = pipeline.Items.LastOrDefault();
+		if (lastItem != null)
+		{
+			lastItem.NextItem = pipelineItem;
+		}
 		pipeline.Items.Add(pipelineItem);
 
 		await _appDbContext.SaveChangesAsync();
@@ -177,6 +192,11 @@ public class PipelineController : ControllerBase
 			return NotFound($"PipelineItem with id [{itemId}] is not found in pipeline [{pipelineId}]");
 
 		pipeline.Items.Remove(pipelineItem);
+		var lastItem = pipeline.Items.LastOrDefault();
+		if (lastItem != null)
+		{
+			lastItem.NextItem = null;
+		}
 
 		await _appDbContext.SaveChangesAsync();
 		return NoContent();
@@ -194,7 +214,7 @@ public class PipelineController : ControllerBase
 
 		// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
 		// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
-		return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
+		return pipeline is not null ? Ok(pipeline.AverageRunTime) : NotFound();
 	}
 
 	// POST: /pipelines/{id}/run
@@ -226,38 +246,16 @@ public class PipelineController : ControllerBase
 		pipeline.Status = PipelineStatus.Running;
 		await _appDbContext.SaveChangesAsync();
 
-		var token = _pipelineManager.IssuePipelineRunCancellationToken(id);
-
-		double actualRunTime = 0;
-		try
+		var pipelineRunEvent = new PipelineRunEvent
 		{
-			actualRunTime = await _taskRunManager.RunSequentialAsync(pipeline.Items, token);
-		}
-		catch (OperationCanceledException ex)
-		{
-			Console.WriteLine($"Pipeline {id} was stopped: {ex.Message}");
-			return Ok($"Pipeline {id} was stopped");
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"Pipeline run failed with error: {ex.Message}");
-			pipeline.Status = PipelineStatus.Failed;
-			await _appDbContext.SaveChangesAsync();
-			throw;
-		}
+			PipelineId = id,
+			Source = $"{nameof(PipelineController)}.Run",
+			StartTime = DateTime.UtcNow
+		};
+		await _pipelineRunChannel.Writer.WriteAsync(pipelineRunEvent);
+		Console.WriteLine("Send PipelineRunEvent.");
 
-		pipeline.PipelineRunTime = actualRunTime;
-		pipeline.Status = PipelineStatus.Finished;
-		await _appDbContext.SaveChangesAsync();
-
-		if (!_pipelineManager.TryUtilizePipelineRunCancellationToken(id))
-		{
-			Console.WriteLine($"Error utilizing the pipeline {id} cancellation token.");
-		}
-
-		return Ok($"Pipeline {id} has finished running in {actualRunTime} seconds.");
-		// TODO: return accepted and subscribe to the result instead of waiting
-		// return Accepted(new { message = "Pipeline run has been started", pipelineId = pipelineId, status = pipeline.Status });
+		return Accepted(new { message = "Pipeline run has been started", pipelineId = id, status = pipeline.Status });
 	}
 
 	// POST: /pipelines/{id}/stop
@@ -299,7 +297,7 @@ public class PipelineController : ControllerBase
 			throw;
 		}
 
-		pipeline.Status = PipelineStatus.Stopped;
+		pipeline.Status = PipelineStatus.Canceled;
 		await _appDbContext.SaveChangesAsync();
 
 		return Ok($"Pipeline {id} was stopped successfully."); ;

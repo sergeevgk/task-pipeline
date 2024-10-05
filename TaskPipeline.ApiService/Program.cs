@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
+using System.Threading.Channels;
 using TaskPipeline.ApiService;
 using TaskPipeline.ApiService.DAL;
 using TaskPipeline.ApiService.Exceptions;
@@ -23,9 +24,19 @@ builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<ITaskRunManager, LocalProcessTaskRunManager>();
 builder.Services.AddSingleton<IPipelineManager, PipelineManager>();
 
+builder.Services.AddSingleton(Channel.CreateUnbounded<TaskRunEvent>());
+builder.Services.AddSingleton(Channel.CreateUnbounded<PipelineRunEvent>());
+builder.Services.AddSingleton(Channel.CreateUnbounded<PipelineCompleteEvent>());
+
+// create scope for those services as DbContext can't be passed there easily
+builder.Services.AddHostedService<TaskRunHandler>();
+builder.Services.AddHostedService<PipelineRunHandler>();
+builder.Services.AddHostedService<PipelineCompleteHandler>();
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddControllers().AddNewtonsoftJson(options => {
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
 	options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
 	options.SerializerSettings.Converters.Add(new StringEnumConverter());
 });
@@ -102,6 +113,7 @@ static async Task<IResult> CreateUser(User user, AppDbContext db)
 	await db.SaveChangesAsync();
 	return Results.Created($"/users/{user.Id}", user);
 }
+
 
 #endregion
 
