@@ -38,6 +38,12 @@ public class PipelineCompleteHandler : BackgroundService
 					continue;
 				}
 
+				if (!pipeline.Status.Is_In(PipelineStatus.Running))
+				{
+					Console.WriteLine($"Skip processing message {msgSerialized} : pipeline {msg.PipelineId} is not running, status: {pipeline.Status}");
+					continue;
+				}
+
 				pipeline.CompleteTime = msg.CompleteTime;
 				pipeline.Status = msg.Status switch
 				{
@@ -51,12 +57,21 @@ public class PipelineCompleteHandler : BackgroundService
 				// another way is to sum up individual items' times
 				pipeline.LastRunTime = (pipeline.CompleteTime - pipeline.StartTime)?.TotalSeconds ?? 0;
 
-				if (!_pipelineManager.TryUtilizePipelineRunCancellationToken(msg.PipelineId))
+				if (pipeline.Status == PipelineStatus.Failed)
 				{
-					Console.WriteLine($"Error utilizing the pipeline {msg.PipelineId} cancellation token.");
+					Console.WriteLine($"Cancelling the failed pipeline {msg.PipelineId} run.");
+					var pipelineCancellationRequested = _pipelineManager.TryStopPipeline(msg.PipelineId);
+					if (!pipelineCancellationRequested)
+						Console.WriteLine($"Error cancelling the pipeline {msg.PipelineId} run.");
+				}
+				else
+				{
+					var tokenUtilized = _pipelineManager.TryUtilizePipelineRunCancellationToken(msg.PipelineId);
+					if (!tokenUtilized)
+						Console.WriteLine($"Error utilizing the pipeline {msg.PipelineId} cancellation token.");
 				}
 
-				Console.WriteLine($"Pipeline {msg.PipelineId} has finished running in {0} seconds.");
+				Console.WriteLine($"Pipeline {msg.PipelineId} has finished running in {pipeline.LastRunTime} seconds.");
 				// decide how to notify the user about pipeline run finish
 				// TODO: webhook / singnalR / websocket / message or event in special queue
 

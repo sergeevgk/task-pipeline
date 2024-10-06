@@ -162,6 +162,7 @@ public class PipelineController : ControllerBase
 		if (lastItem != null)
 		{
 			lastItem.NextItem = pipelineItem;
+			lastItem.NextItemId = pipelineItem.Id;
 		}
 		pipeline.Items.Add(pipelineItem);
 
@@ -187,17 +188,18 @@ public class PipelineController : ControllerBase
 		if (pipeline is null)
 			return NotFound($"Pipeline with id [{pipelineId}] is not found");
 
-		var pipelineItem = pipeline.Items.FirstOrDefault(pItem => pItem.Id == itemId);
-		if (pipelineItem is null)
+		var pipelineItemToRemove = pipeline.Items.FirstOrDefault(pItem => pItem.Id == itemId);
+		if (pipelineItemToRemove is null)
 			return NotFound($"PipelineItem with id [{itemId}] is not found in pipeline [{pipelineId}]");
 
-		pipeline.Items.Remove(pipelineItem);
-		var lastItem = pipeline.Items.LastOrDefault();
-		if (lastItem != null)
+		var previousItem = pipeline.Items.FirstOrDefault(pipelineItem => pipelineItem.NextItem == pipelineItem);
+		if (previousItem is not null)
 		{
-			lastItem.NextItem = null;
+			previousItem.NextItem = pipelineItemToRemove.NextItem;
+			previousItem.NextItemId = pipelineItemToRemove.NextItemId;
 		}
 
+		pipeline.Items.Remove(pipelineItemToRemove);
 		await _appDbContext.SaveChangesAsync();
 		return NoContent();
 	}

@@ -51,6 +51,13 @@ public class TaskRunHandler : BackgroundService
 					continue;
 				}
 
+				if (pipelineItem.Status.Is_In(PipelineItemStatus.Running))
+				{
+					Console.WriteLine($"Error processing message {msgSerialized} : pipeline item {pipelineItem.Id} has status {pipelineItem.Status} already.");
+					continue;
+				}
+
+				pipelineItem.Status = PipelineItemStatus.Running;
 				var pipelineCancellationToken = _pipelineManager.IssuePipelineRunCancellationToken(pipelineItem.PipelineId);
 
 				// for the exception cases
@@ -59,7 +66,8 @@ public class TaskRunHandler : BackgroundService
 				double actualRunTime = 0;
 				try
 				{
-					actualRunTime = await _taskRunManager.RunAsync(pipelineItem, pipelineCancellationToken);
+					actualRunTime = await _taskRunManager.RunAsync(task, pipelineCancellationToken);
+					pipelineItem.Status = PipelineItemStatus.Finished;
 				}
 				catch (OperationCanceledException ex)
 				{
@@ -71,6 +79,7 @@ public class TaskRunHandler : BackgroundService
 						CompleteTime = DateTime.UtcNow,
 						Source = $"{nameof(TaskRunHandler)} pipelineItem {pipelineItem.Id}"
 					};
+					pipelineItem.Status = PipelineItemStatus.Canceled;
 
 					await _pipelineCompleteChannel.Writer.WriteAsync(canceledEvent, stoppingToken);
 					continue;
@@ -86,6 +95,7 @@ public class TaskRunHandler : BackgroundService
 						Source = $"{nameof(TaskRunHandler)} pipelineItem {pipelineItem.Id}"
 					};
 
+					pipelineItem.Status = PipelineItemStatus.Failed;
 					await _pipelineCompleteChannel.Writer.WriteAsync(failedEvent, stoppingToken);
 					continue;
 				}

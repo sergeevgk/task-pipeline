@@ -1,6 +1,4 @@
-﻿using TaskPipeline.ApiService.Pipelines;
-
-namespace TaskPipeline.ApiService.Tasks;
+﻿namespace TaskPipeline.ApiService.Tasks;
 
 public interface ITaskRunManager
 {
@@ -11,21 +9,21 @@ public interface ITaskRunManager
 	/// <param name="task"></param>
 	/// <param name="cancellationToken"></param>
 	/// <returns>Task tun time in seconds</returns>
-	public Task<double> RunAsync(PipelineItem task, CancellationToken cancellationToken);
+	public Task<double> RunAsync(ExecutableTask task, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Runs tasks in a batch - sequence is not guaranteed. Returns summary task run time in seconds.
+	/// Runs tasks in a batch - sequence is not guaranteed
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <param name="cancellationToken"></param>
-	/// <returns></returns>
-	public Task<double> RunBatchAsync(List<PipelineItem> tasks, CancellationToken cancellationToken);
+	/// <returns>Task run times in seconds.</returns>
+	public Task<IReadOnlyList<double>> RunBatchAsync(List<ExecutableTask> tasks, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Runs tasks sequentially. Returns summary task run time in seconds.
+	/// Runs tasks sequentially.
 	/// </summary>
 	/// <param name="tasks"></param>
 	/// <param name="cancellationToken"></param>
-	/// <returns></returns>
-	public Task<double> RunSequentialAsync(List<PipelineItem> tasks, CancellationToken cancellationToken);
+	/// <returns>Task run times in seconds.</returns>
+	public Task<IReadOnlyList<double>> RunSequentialAsync(List<ExecutableTask> tasks, CancellationToken cancellationToken);
 }

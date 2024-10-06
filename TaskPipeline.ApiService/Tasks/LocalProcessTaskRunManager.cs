@@ -14,12 +14,11 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	}
 
 	/// <inheritdoc/>
-	public async Task<double> RunAsync(PipelineItem item, CancellationToken cancellationToken)
+	public async Task<double> RunAsync(ExecutableTask task, CancellationToken cancellationToken)
 	{
-		var task = item.Task;
 		if (task == null)
 		{
-			throw new ArgumentNullException($"{nameof(item.Task)} is null");
+			throw new ArgumentNullException($"{nameof(Task)} is null");
 		}
 
 		if (string.IsNullOrEmpty(_settings.ExternalConsoleAppPath))
@@ -82,41 +81,33 @@ public class LocalProcessTaskRunManager : ITaskRunManager
 	/// <summary>
 	/// Runs several tasks. For now simply Task.WhenAll() RunTask actions for every task in the list.
 	/// Maybe there is a way to optimize.
-	/// Calculates total time of pipeline run because all the tasks are available at once.
+	/// Calculates the individual run times of each task.
 	/// </summary>
 	/// <param name="tasks"></param>
-	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunBatchAsync(List<PipelineItem> tasks, CancellationToken cancellationToken)
+	/// <returns>Readonly collection of individual tasks run time in seconds.</returns>
+	public async Task<IReadOnlyList<double>> RunBatchAsync(List<ExecutableTask> tasks, CancellationToken cancellationToken)
 	{
-		var watch = Stopwatch.StartNew();
-		
-		await Task.WhenAll(tasks.Select(t => RunAsync(t, cancellationToken)));
+		var executionTimes = await Task.WhenAll(tasks.Select(t => RunAsync(t, cancellationToken)));
 
-		watch.Stop();
-		var elapsedSeconds = watch.Elapsed.TotalSeconds;
-	
-		return elapsedSeconds;
+		return executionTimes;
 	}
 
 	/// <summary>
 	/// Runs several tasks. For now simply calls RunTask for every task in the list sequentially.
-	/// Calculates total time of pipeline run because all the tasks are available at once.
+	/// Calculates the individual run times of each task.
 	/// </summary>
 	/// <param name="tasks"></param>
-	/// <returns>Pipeline run time in seconds.</returns>
-	public async Task<double> RunSequentialAsync(List<PipelineItem> tasks, CancellationToken cancellationToken)
+	/// <returns>Readonly collection of individual tasks run time in seconds.</returns>
+	public async Task<IReadOnlyList<double>> RunSequentialAsync(List<ExecutableTask> tasks, CancellationToken cancellationToken)
 	{
-		var watch = Stopwatch.StartNew();
-
+		var executionTimes = new List<double>();
 		foreach (var task in tasks)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await RunAsync(task, cancellationToken);
+			var executionTime = await RunAsync(task, cancellationToken);
+			executionTimes.Add(executionTime);
 		}
 
-		watch.Stop();
-		var elapsedSeconds = watch.Elapsed.TotalSeconds;
-
-		return elapsedSeconds;
+		return executionTimes;
 	}
 }
