@@ -84,8 +84,8 @@ if (app.Environment.IsDevelopment())
 
 	using var scope = app.Services.CreateScope();
 	var services = scope.ServiceProvider;
-	var userDb = services.GetRequiredService<AppDbContext>();
-	userDb.Database.EnsureCreated();
+	var dbContext = services.GetRequiredService<AppDbContext>();
+	dbContext.Database.Migrate();
 }
 
 app.UseHttpsRedirection();

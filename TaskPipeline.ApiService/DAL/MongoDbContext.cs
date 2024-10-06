@@ -6,17 +6,21 @@ using TaskPipeline.ApiService.Users;
 
 namespace TaskPipeline.ApiService.DAL;
 
+/// <summary>
+/// Can be used with EF Core Mongo db library currently in preview https://www.mongodb.com/docs/entity-framework/current/
+/// </summary>
+[Obsolete("Currently not used")]
 public class MongoDbContext : DbContext
 {
-    private readonly IMongoDatabase _database;
+	private readonly IMongoDatabase _database;
 
-    public MongoDbContext(IConfiguration config)
-    {
-        var client = new MongoClient(config.GetConnectionString("MongoDb"));
-        _database = client.GetDatabase("YourDatabaseName");
-    }
+	public MongoDbContext(IConfiguration config)
+	{
+		var client = new MongoClient(config.GetConnectionString("MongoDb"));
+		_database = client.GetDatabase("YourDatabaseName");
+	}
 
-    public IMongoCollection<ExecutableTask> Tasks => _database.GetCollection<ExecutableTask>("Tasks");
-    public IMongoCollection<Pipeline> Pipelines => _database.GetCollection<Pipeline>("Pipelines");
-    public IMongoCollection<User> Users => _database.GetCollection<User>("Users");
+	public IMongoCollection<ExecutableTask> Tasks => _database.GetCollection<ExecutableTask>("Tasks");
+	public IMongoCollection<Pipeline> Pipelines => _database.GetCollection<Pipeline>("Pipelines");
+	public IMongoCollection<User> Users => _database.GetCollection<User>("Users");
 }

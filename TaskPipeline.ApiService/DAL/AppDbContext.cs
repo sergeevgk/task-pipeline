@@ -17,7 +17,12 @@ public class AppDbContext : DbContext
 	{
 		var folder = Environment.SpecialFolder.LocalApplicationData;
 		var path = Environment.GetFolderPath(folder);
-		DbPath = Path.Join(path, "task_pipeline.db");
+		var dbDirectory = Path.Join(path, "TaskPipeline");
+		if (!Directory.Exists(dbDirectory))
+		{
+			Directory.CreateDirectory(dbDirectory);
+		}
+		DbPath = Path.Join(dbDirectory, "task_pipeline.db");
 	}
 
 	protected override void OnConfiguring(DbContextOptionsBuilder options)
