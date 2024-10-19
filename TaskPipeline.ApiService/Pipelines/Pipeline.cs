@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
-namespace TaskPipeline.ApiService.Models;
+
+namespace TaskPipeline.ApiService.Pipelines;
 
 public enum PipelineStatus
 {
@@ -10,7 +11,9 @@ public enum PipelineStatus
 	[Description("Pipeline run is finished")]
 	Finished,
 	[Description("Pipeline run failed")]
-	Failed
+	Failed,
+	[Description("Pipeline run canceled")] 
+	Canceled
 }
 
 public class Pipeline
@@ -18,15 +21,18 @@ public class Pipeline
 	public int Id { get; set; }
 	public required string Name { get; set; }
 	/// <summary>
-	/// Total time of the pipeline run based on individual times of included tasks.
+	/// Total time of the pipeline run based on individual times of included tasks, measured in seconds.
 	/// Recalculated automatically on adding a new task to a pipeline and is saved in DB.
 	/// </summary>
-	public double TotalTime => Items.Sum(i => i.Task.AverageTime);
+	public double AverageRunTime => Items.Sum(i => i.Task.AverageTime);
+	
+	public DateTime? StartTime { get; set; }
+	public DateTime? CompleteTime { get; set; }
 	/// <summary>
-	/// Pipeline actual run time calculated as part of <see cref="RunAsync"/> process.
+	/// Pipeline latest run time calculated as part of Pipeline run process.
 	/// Measured in seconds.
 	/// </summary>
-	public double PipelineRunTime { get; set; }
+	public double LastRunTime { get; set; }
 	public string? Description { get; set; }
 	public PipelineStatus Status { get; set; }
 	public List<PipelineItem> Items { get; set; } = [];

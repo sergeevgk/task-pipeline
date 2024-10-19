@@ -1,6 +1,6 @@
 ﻿using TaskPipeline.ApiService.DAL;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.Users;
 
 public class UserService
 {
@@ -16,7 +16,7 @@ public class UserService
 		return user != null;
 	}
 
-	public Models.User GetUserByToken(string userToken)
+	public User GetUserByToken(string userToken)
 	{
 		var user = _context.Users.FirstOrDefault(user => user.ApiToken == userToken);
 		return user;

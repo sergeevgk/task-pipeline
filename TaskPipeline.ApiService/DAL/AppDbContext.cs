@@ -1,12 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TaskPipeline.ApiService.Models;
+using TaskPipeline.ApiService.Pipelines;
+using TaskPipeline.ApiService.Tasks;
+using TaskPipeline.ApiService.Users;
 
 namespace TaskPipeline.ApiService.DAL;
 
 public class AppDbContext : DbContext
 {
 	public DbSet<User> Users => Set<User>();
-	public DbSet<Models.Task> Tasks => Set<Models.Task>();
+	public DbSet<ExecutableTask> Tasks => Set<ExecutableTask>();
 	public DbSet<Pipeline> Pipelines => Set<Pipeline>();
 	public string DbPath { get; }
 
@@ -15,7 +17,12 @@ public class AppDbContext : DbContext
 	{
 		var folder = Environment.SpecialFolder.LocalApplicationData;
 		var path = Environment.GetFolderPath(folder);
-		DbPath = Path.Join(path, "task_pipeline.db");
+		var dbDirectory = Path.Join(path, "TaskPipeline");
+		if (!Directory.Exists(dbDirectory))
+		{
+			Directory.CreateDirectory(dbDirectory);
+		}
+		DbPath = Path.Join(dbDirectory, "task_pipeline.db");
 	}
 
 	protected override void OnConfiguring(DbContextOptionsBuilder options)

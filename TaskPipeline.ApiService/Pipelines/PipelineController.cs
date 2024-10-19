@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Channels;
 using TaskPipeline.ApiService.DAL;
-using TaskPipeline.ApiService.Models;
+using TaskPipeline.ApiService.Tasks;
+using TaskPipeline.ApiService.Users;
 
-namespace TaskPipeline.ApiService;
+namespace TaskPipeline.ApiService.Pipelines;
 
 [ApiController]
 [Route("pipelines")]
@@ -12,12 +15,20 @@ public class PipelineController : ControllerBase
 	private readonly AppDbContext _appDbContext;
 	private readonly UserService _userService;
 	private readonly ITaskRunManager _taskRunManager;
+	private readonly IPipelineManager _pipelineManager;
+	private readonly Channel<PipelineRunEvent> _pipelineRunChannel;
 
-	public PipelineController(AppDbContext taskDbContext, UserService userService, ITaskRunManager taskRunManager)
+	public PipelineController(AppDbContext taskDbContext,
+		UserService userService,
+		ITaskRunManager taskRunManager,
+		IPipelineManager pipelineManager,
+		Channel<PipelineRunEvent> pipelineRunChannel)
 	{
 		_appDbContext = taskDbContext ?? throw new ArgumentNullException(nameof(taskDbContext));
 		_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		_taskRunManager = taskRunManager ?? throw new ArgumentNullException(nameof(taskRunManager));
+		_pipelineManager = pipelineManager ?? throw new ArgumentNullException(nameof(pipelineManager));
+		_pipelineRunChannel = pipelineRunChannel ?? throw new ArgumentNullException(nameof(pipelineRunChannel));
 	}
 
 	#region pipeline CRUD
@@ -143,17 +154,25 @@ public class PipelineController : ControllerBase
 			Pipeline = pipeline,
 			PipelineId = pipelineId,
 			Task = task,
-			TaskId = taskId
+			TaskId = taskId,
+			NextItem = null
 		};
+
+		var lastItem = pipeline.Items.LastOrDefault();
+		if (lastItem != null)
+		{
+			lastItem.NextItem = pipelineItem;
+			lastItem.NextItemId = pipelineItem.Id;
+		}
 		pipeline.Items.Add(pipelineItem);
 
 		await _appDbContext.SaveChangesAsync();
 		return Ok(pipeline);
 	}
 
-	// DELETE: /pipelines/{pipelineId}/tasks/{taskId}
-	[HttpDelete("{pipelineId:int}/tasks/{taskId:int}")]
-	public async Task<IActionResult> RemoveTaskFromPipeline([FromRoute] int pipelineId, [FromRoute] int taskId)
+	// DELETE: /pipelines/{pipelineId}/items/{itemId}
+	[HttpDelete("{pipelineId:int}/items/{itemId:int}")]
+	public async Task<IActionResult> RemoveItemFromPipeline([FromRoute] int pipelineId, [FromRoute] int itemId)
 	{
 		var apiKey = Request.Headers["UserApiKey"].ToString();
 		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
@@ -164,18 +183,23 @@ public class PipelineController : ControllerBase
 
 		var pipeline = await _appDbContext.Pipelines
 			.Include(p => p.Items)
-			.ThenInclude(i => i.Task)
 			.FirstOrDefaultAsync(p => p.Id == pipelineId);
 
 		if (pipeline is null)
 			return NotFound($"Pipeline with id [{pipelineId}] is not found");
 
-		var pipelineItem = pipeline.Items.FirstOrDefault(t => t.Task.Id == taskId);
-		if (pipelineItem is null)
-			return NotFound($"Task with id [{taskId}] is not found in pipeline [{pipelineId}]");
+		var pipelineItemToRemove = pipeline.Items.FirstOrDefault(pItem => pItem.Id == itemId);
+		if (pipelineItemToRemove is null)
+			return NotFound($"PipelineItem with id [{itemId}] is not found in pipeline [{pipelineId}]");
 
-		pipeline.Items.Remove(pipelineItem);
+		var previousItem = pipeline.Items.FirstOrDefault(pipelineItem => pipelineItem.NextItem == pipelineItem);
+		if (previousItem is not null)
+		{
+			previousItem.NextItem = pipelineItemToRemove.NextItem;
+			previousItem.NextItemId = pipelineItemToRemove.NextItemId;
+		}
 
+		pipeline.Items.Remove(pipelineItemToRemove);
 		await _appDbContext.SaveChangesAsync();
 		return NoContent();
 	}
@@ -185,10 +209,14 @@ public class PipelineController : ControllerBase
 	[HttpGet("{id:int}/time")]
 	public async Task<IActionResult> GetPipelineTotalTimeById(int id)
 	{
-		var pipeline = await _appDbContext.Pipelines.FirstOrDefaultAsync(p => p.Id == id);
+		var pipeline = await _appDbContext.Pipelines
+			.Include(p => p.Items)
+			.ThenInclude(i => i.Task)
+			.FirstOrDefaultAsync(p => p.Id == id);
+
 		// TotalTime actually sums the Task.AverageTime for all tasks assigned to a pipeline. It is recalculated on adding a new task to a pipeline.
 		// alternative implementation - use Pipelines.Include(p => p.Tasks) and call pipeline.Tasks.Sum(t => t.AverageTime);
-		return pipeline is not null ? Ok(pipeline.TotalTime) : NotFound();
+		return pipeline is not null ? Ok(pipeline.AverageRunTime) : NotFound();
 	}
 
 	// POST: /pipelines/{id}/run
@@ -209,35 +237,71 @@ public class PipelineController : ControllerBase
 
 		if (pipeline == null)
 		{
-			return NotFound(new { message = "Pipeline not found." });
+			return NotFound(new { message = $"Pipeline {id} not found." });
 		}
 
 		if (pipeline.Status == PipelineStatus.Running)
 		{
-			return Conflict(new { message = "Pipeline is already running." });
+			return Conflict(new { message = $"Pipeline {id} is already running." });
 		}
 
 		pipeline.Status = PipelineStatus.Running;
 		await _appDbContext.SaveChangesAsync();
-		double actualRunTime = 0;
+
+		var pipelineRunEvent = new PipelineRunEvent
+		{
+			PipelineId = id,
+			Source = $"{nameof(PipelineController)}.Run",
+			StartTime = DateTime.UtcNow
+		};
+		await _pipelineRunChannel.Writer.WriteAsync(pipelineRunEvent);
+		Console.WriteLine("Send PipelineRunEvent.");
+
+		return Accepted(new { message = "Pipeline run has been started", pipelineId = id, status = pipeline.Status });
+	}
+
+	// POST: /pipelines/{id}/stop
+	[HttpPost("{id:int}/stop")]
+	public async Task<IActionResult> StopPipeline(int id)
+	{
+		var apiKey = Request.Headers["UserApiKey"].ToString();
+		var isValid = apiKey != null && _userService.VerifyToken(apiKey);
+		if (!isValid)
+		{
+			return Unauthorized("Invalid API token.");
+		}
+
+		var pipeline = await _appDbContext.Pipelines
+			.Include(p => p.Items)
+			.ThenInclude(i => i.Task)
+			.FirstOrDefaultAsync(p => p.Id == id);
+
+		if (pipeline == null)
+		{
+			return NotFound(new { message = $"Pipeline {id} not found." });
+		}
+
+		if (pipeline.Status != PipelineStatus.Running)
+		{
+			return Conflict(new { message = $"Pipeline {id} is not running." });
+		}
+
 		try
 		{
-			actualRunTime = await _taskRunManager.RunSequentialAsync(pipeline.Items);
+			if (!_pipelineManager.TryStopPipeline(id))
+				throw new ApplicationException($"Unable to stop pipeline {id}.");
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Pipeline run failed with error: {ex.Message}");
+			Console.WriteLine($"Pipeline {id} stop failed with error: {ex.Message}");
 			pipeline.Status = PipelineStatus.Failed;
 			await _appDbContext.SaveChangesAsync();
 			throw;
 		}
 
-		pipeline.PipelineRunTime = actualRunTime;
-		pipeline.Status = PipelineStatus.Finished;
+		pipeline.Status = PipelineStatus.Canceled;
 		await _appDbContext.SaveChangesAsync();
 
-		return Ok($"Pipeline has finished running in {actualRunTime} seconds.");
-		// TODO: return accepted and subscribe to the result instead of waiting
-		// return Accepted(new { message = "Pipeline run has been started", pipelineId = pipelineId, status = pipeline.Status });
+		return Ok($"Pipeline {id} was stopped successfully."); ;
 	}
 }

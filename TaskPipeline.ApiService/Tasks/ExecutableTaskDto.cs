@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TaskPipeline.ApiService.Models;
+namespace TaskPipeline.ApiService.Tasks;
 
-public class TaskDto
+public class ExecutableTaskDto
 {
 	public int Id { get; set; }
 	public required string Name { get; set; }
